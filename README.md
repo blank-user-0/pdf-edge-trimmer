@@ -1,0 +1,1 @@
+# pdf-edge-trimmer
