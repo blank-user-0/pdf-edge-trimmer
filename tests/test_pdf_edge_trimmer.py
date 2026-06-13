@@ -4,10 +4,17 @@ from pathlib import Path
 
 import fitz
 
-from pdf_edge_trimmer.app import trim_pdf_edges_by_mode
+from pdf_edge_trimmer.app import clean_path_text, trim_pdf_edges_by_mode
 
 
 class PdfEdgeTrimmerTests(unittest.TestCase):
+    def test_clean_path_text_accepts_common_pasted_formats(self) -> None:
+        path = "/Users/example/My PDF.pdf"
+        self.assertEqual(clean_path_text(f"'{path}'"), path)
+        self.assertEqual(clean_path_text(f"('{path}')"), path)
+        self.assertEqual(clean_path_text(f'("{path}")'), path)
+        self.assertEqual(clean_path_text("file:///Users/example/My%20PDF.pdf"), path)
+
     def make_sample_pdf(self, path: Path) -> None:
         doc = fitz.open()
         page = doc.new_page(width=612, height=792)

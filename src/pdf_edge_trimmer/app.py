@@ -31,7 +31,7 @@ import webbrowser
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Callable, Optional
-from urllib.parse import parse_qs, urlencode, urlparse
+from urllib.parse import parse_qs, unquote, urlencode, urlparse
 
 try:
     import fitz
@@ -80,6 +80,27 @@ ProgressCallback = Optional[Callable[[int, int], None]]
 
 class TrimError(ValueError):
     """Raised for user-fixable PDF trimming inputs."""
+
+
+def clean_path_text(value: Path | str) -> str:
+    """Normalize common pasted path formats from browsers, Finder, and chat."""
+    text = str(value).strip()
+
+    # Users often paste paths as ('/path/to/file.pdf') or "/path/to/file.pdf".
+    if text.startswith("(") and text.endswith(")"):
+        text = text[1:-1].strip()
+    if len(text) >= 2 and text[0] == text[-1] and text[0] in {"'", '"'}:
+        text = text[1:-1].strip()
+
+    if text.startswith("file://"):
+        parsed = urlparse(text)
+        text = unquote(parsed.path)
+
+    return text
+
+
+def clean_path(value: Path | str) -> Path:
+    return Path(clean_path_text(value)).expanduser()
 
 
 def parse_trim_inches(value: str | float) -> float:
@@ -157,6 +178,7 @@ def visible_rect_for_page(page: fitz.Page, trim_points: dict[str, float]) -> fit
 
 
 def open_pdf_for_reading(input_pdf: Path) -> fitz.Document:
+    input_pdf = clean_path(input_pdf)
     if not input_pdf.exists():
         raise TrimError(f"Input PDF does not exist: {input_pdf}")
     if not input_pdf.is_file():
@@ -290,8 +312,8 @@ def trim_pdf_edges_redacted(
     progress: ProgressCallback = None,
 ) -> None:
     """Permanently redact selected edge areas while preserving remaining PDF objects."""
-    input_path = Path(input_pdf).expanduser()
-    output_path = Path(output_pdf).expanduser()
+    input_path = clean_path(input_pdf)
+    output_path = clean_path(output_pdf)
     trim_amounts = parse_edge_trims(
         top_inches=top_inches,
         bottom_inches=bottom_inches,
@@ -394,8 +416,8 @@ def trim_pdf_edges_visual_crop(
     progress: ProgressCallback = None,
 ) -> None:
     """Visually crop selected edges without permanently removing hidden PDF data."""
-    input_path = Path(input_pdf).expanduser()
-    output_path = Path(output_pdf).expanduser()
+    input_path = clean_path(input_pdf)
+    output_path = clean_path(output_pdf)
     trim_amounts = parse_edge_trims(
         top_inches=top_inches,
         bottom_inches=bottom_inches,
@@ -451,8 +473,8 @@ def trim_pdf_edges_compressed_image(
     progress: ProgressCallback = None,
 ) -> None:
     """Permanently trim edges by rebuilding pages as compressed JPEG images."""
-    input_path = Path(input_pdf).expanduser()
-    output_path = Path(output_pdf).expanduser()
+    input_path = clean_path(input_pdf)
+    output_path = clean_path(output_pdf)
     trim_amounts = parse_edge_trims(
         top_inches=top_inches,
         bottom_inches=bottom_inches,
@@ -564,7 +586,7 @@ def trim_pdf_edges_by_mode(
 
 def read_pdf_info(input_pdf: Path | str) -> tuple[int, float, float]:
     """Return page count plus first-page width/height in inches."""
-    with open_pdf_for_reading(Path(input_pdf).expanduser()) as doc:
+    with open_pdf_for_reading(clean_path(input_pdf)) as doc:
         first_page = doc.load_page(0)
         return (
             doc.page_count,
@@ -586,7 +608,7 @@ def render_preview_image(
     max_height: int = 760,
 ) -> Image.Image:
     """Render a preview page with red cut lines and shaded removed areas."""
-    input_path = Path(input_pdf).expanduser()
+    input_path = clean_path(input_pdf)
     if bottom_inches is None:
         bottom_inches = trim_inches if trim_inches is not None else DEFAULT_BOTTOM_INCHES
     trim_amounts = parse_edge_trims(
@@ -1372,8 +1394,8 @@ class PdfBottomTrimmerApp:
             messagebox.showinfo("Already running", "PDF generation is already in progress.")
             return
 
-        input_path = Path(self.input_var.get()).expanduser()
-        output_path = Path(self.output_var.get()).expanduser()
+        input_path = clean_path(self.input_var.get())
+        output_path = clean_path(self.output_var.get())
 
         if output_path.exists():
             should_overwrite = messagebox.askyesno(
