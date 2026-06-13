@@ -830,8 +830,29 @@ def render_web_page(
       max-width: 1180px;
       margin: 0 auto;
     }}
+    .brand {{
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 0 0 8px;
+    }}
+    .logo-mark {{
+      width: 38px;
+      height: 38px;
+      flex: 0 0 38px;
+      display: grid;
+      place-items: center;
+      border-radius: 8px;
+      background: linear-gradient(135deg, #111827 0%, #146ef5 100%);
+      box-shadow: 0 6px 18px rgba(20, 110, 245, 0.22);
+    }}
+    .logo-mark svg {{
+      width: 26px;
+      height: 26px;
+      display: block;
+    }}
     h1 {{
-      margin: 0 0 6px;
+      margin: 0;
       font-size: 28px;
       line-height: 1.2;
     }}
@@ -968,7 +989,17 @@ def render_web_page(
 </head>
 <body>
   <main>
-    <h1>PDF Edge Trimmer</h1>
+    <div class="brand">
+      <span class="logo-mark" aria-hidden="true">
+        <svg viewBox="0 0 32 32" focusable="false">
+          <path d="M9 4.8h10.5L24 9.3v17.9H9z" fill="#ffffff"/>
+          <path d="M19.5 4.8v5.1H24" fill="#dbeafe"/>
+          <path d="M13 14h7.2M13 18h6" stroke="#146ef5" stroke-width="1.8" stroke-linecap="round"/>
+          <path d="M6.5 22.6h19" stroke="#ff4d4f" stroke-width="2.2" stroke-linecap="round"/>
+        </svg>
+      </span>
+      <h1>PDF Edge Trimmer</h1>
+    </div>
     <p class="muted">
       Permanently removes selected amounts from the top, bottom, left, and
       right edges of each page and saves a new PDF. For lawful educational
